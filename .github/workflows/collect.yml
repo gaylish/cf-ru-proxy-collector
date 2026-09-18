@@ -1,0 +1,64 @@
+name: Collect RU CF Proxies
+
+on:
+  schedule:
+    # 每天 UTC 04:00 = 北京时间 12:00
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Scrape FOFA (5 rounds)
+        env:
+          FOFA_COOKIE: ${{ secrets.FOFA_COOKIE }}
+        run: |
+          python3 parsefofahtml_ru.py --rounds 5 --output ips_ru.txt
+
+      - name: Validate proxies
+        run: |
+          python3 cfproxiesvalidator.py
+
+      - name: Copy results
+        run: |
+          mkdir -p results
+          DATE=$(date -u +%Y-%m-%d)
+          cp ips_ru.txt results/ips_ru_${DATE}.txt
+          cp fofa_results_ru.csv results/fofa_results_ru_${DATE}.csv
+          cp https_proxy.txt results/https_proxy_${DATE}.txt
+          cp middle_proxy.txt results/middle_proxy_${DATE}.txt 2>/dev/null || true
+          # 保留一份 latest
+          cp ips_ru.txt results/ips_ru_latest.txt
+          cp fofa_results_ru.csv results/fofa_results_ru_latest.csv
+          cp https_proxy.txt results/https_proxy_latest.txt
+          cp middle_proxy.txt results/middle_proxy_latest.txt 2>/dev/null || true
+
+      - name: Show summary
+        run: |
+          echo "=== Summary ==="
+          echo "Total IPs: $(wc -l < ips_ru.txt)"
+          echo "Working HTTPS proxies: $(wc -l < https_proxy.txt)"
+          echo "Middle proxies: $(grep -c '入口IP' middle_proxy.txt 2>/dev/null || echo 0)"
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add results/
+          git commit -m "Update proxy results $(date -u +%Y-%m-%d)" || echo "No changes to commit"
+          git push

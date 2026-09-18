@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+cookie.txt
+ips_ru.txt
+fofa_results_ru.csv
+https_proxy.txt
+http_proxy.txt
+middle_proxy.txt
+ips.txt
+*.csv
