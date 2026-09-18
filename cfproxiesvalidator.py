@@ -16,6 +16,10 @@ IP_TOKEN = "068f269ea236dc57215574f3542c8161e27fbf70"
 HTTP_FILE = "http_proxy.txt"
 HTTPS_FILE = "https_proxy.txt"
 MIDDLE_FILE = "middle_proxy.txt"
+DME_FILE = "dme_proxy.txt"
+
+# 需要单独提取的 CF colo（莫斯科数据中心）
+TARGET_COLO = "DME"
 
 seen = set()
 lock = threading.Lock()
@@ -23,7 +27,7 @@ lock = threading.Lock()
 ipinfo_cache = {}
 ipinfo_lock = threading.Lock()
 
-total = checked = ok = middle = 0
+total = checked = ok = middle = dme_count = 0
 
 # ================== 读取 ==================
 
@@ -90,7 +94,7 @@ def async_query_middle(ip, port, proto, returned_ip):
 # ================== 检测 ==================
 
 def check(task):
-    global checked, ok
+    global checked, ok, dme_count
 
     ip, port, proto = task
 
@@ -114,10 +118,19 @@ def check(task):
         if "ip=" in result:
             returned_ip = re.search(r'ip=(.+)', result).group(1)
 
+            # 提取 colo（CF 数据中心代码）
+            colo_match = re.search(r'colo=(\S+)', result)
+            colo = colo_match.group(1) if colo_match else ""
+
             with lock:
                 ok += 1
                 f = HTTPS_FILE if proto == "https" else HTTP_FILE
                 open(f, "a").write(f"{ip}:{port}\n")
+
+                # DME（莫斯科）单独存一份
+                if colo == TARGET_COLO:
+                    dme_count += 1
+                    open(DME_FILE, "a").write(f"{ip}:{port}\n")
 
             if returned_ip != ip:
                 async_query_middle(ip, port, proto, returned_ip)
@@ -128,7 +141,7 @@ def check(task):
     finally:
         with lock:
             checked += 1
-            print(f"\r进度: {checked}/{total} 成功:{ok} 中转:{middle}", end="")
+            print(f"\r进度: {checked}/{total} 成功:{ok} 中转:{middle} DME:{dme_count}", end="")
 
 
 # ================== 主函数 ==================
@@ -142,11 +155,12 @@ def main():
     open(HTTP_FILE, "w").close()
     open(HTTPS_FILE, "w").close()
     open(MIDDLE_FILE, "w").close()
+    open(DME_FILE, "w").close()
 
     with ThreadPoolExecutor(max_workers=THREADS) as pool:
         pool.map(check, tasks)
 
-    print("\n完成")
+    print(f"\n完成 | 可用: {ok} | 中转: {middle} | DME(莫斯科): {dme_count}")
 
 
 if __name__ == "__main__":

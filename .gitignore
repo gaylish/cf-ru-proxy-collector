@@ -6,5 +6,6 @@ fofa_results_ru.csv
 https_proxy.txt
 http_proxy.txt
 middle_proxy.txt
+dme_proxy.txt
 ips.txt
 *.csv

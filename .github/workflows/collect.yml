@@ -40,15 +40,18 @@ jobs:
           DATE=$(date -u +%Y-%m-%d)
           cp https_proxy.txt results/https_proxy_${DATE}.txt
           cp middle_proxy.txt results/middle_proxy_${DATE}.txt 2>/dev/null || true
+          cp dme_proxy.txt results/dme_proxy_${DATE}.txt 2>/dev/null || true
           # 保留一份 latest
           cp https_proxy.txt results/https_proxy_latest.txt
           cp middle_proxy.txt results/middle_proxy_latest.txt 2>/dev/null || true
+          cp dme_proxy.txt results/dme_proxy_latest.txt 2>/dev/null || true
 
       - name: Show summary
         run: |
           echo "=== Summary ==="
           echo "Total IPs: $(wc -l < ips_ru.txt)"
           echo "Working HTTPS proxies: $(wc -l < https_proxy.txt)"
+          echo "DME (Moscow) proxies: $(wc -l < dme_proxy.txt 2>/dev/null || echo 0)"
           echo "Middle proxies: $(grep -c '入口IP' middle_proxy.txt 2>/dev/null || echo 0)"
 
       - name: Commit results
