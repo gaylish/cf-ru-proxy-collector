@@ -38,13 +38,9 @@ jobs:
         run: |
           mkdir -p results
           DATE=$(date -u +%Y-%m-%d)
-          cp ips_ru.txt results/ips_ru_${DATE}.txt
-          cp fofa_results_ru.csv results/fofa_results_ru_${DATE}.csv
           cp https_proxy.txt results/https_proxy_${DATE}.txt
           cp middle_proxy.txt results/middle_proxy_${DATE}.txt 2>/dev/null || true
           # 保留一份 latest
-          cp ips_ru.txt results/ips_ru_latest.txt
-          cp fofa_results_ru.csv results/fofa_results_ru_latest.csv
           cp https_proxy.txt results/https_proxy_latest.txt
           cp middle_proxy.txt results/middle_proxy_latest.txt 2>/dev/null || true
 
